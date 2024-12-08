@@ -242,6 +242,32 @@ def predict_npk():
 
     except Exception as e:
         return jsonify({"error": f"Unexpected error occurred: {str(e)}"}), 500
+# API endpoint for fertilizer recommendation
+
+
+@app.route("/recommend_fertilizer", methods=["POST"])
+def recommend_fertilizer():
+    try:
+        data = request.json
+        n_value = data.get("n_value")
+        p_value = data.get("p_value")
+        k_value = data.get("k_value")
+        ph_value = data.get("ph_value")
+        crop_type = data.get("crop_type")
+        soil_type = data.get("soil_type")
+        weather = data.get("weather")
+
+        if None in [n_value, p_value, k_value, ph_value, crop_type, soil_type, weather]:
+            return jsonify({"error": "Missing one or more required parameters."}), 400
+
+        recommendation = get_fertilizer_recommendation(
+            n_value, p_value, k_value, ph_value, crop_type, soil_type, weather
+        )
+
+        return jsonify(recommendation)
+
+    except Exception as e:
+        return jsonify({"error": f"Unexpected error occurred: {str(e)}"}), 500
 
 
 # Run the Flask app
