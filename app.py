@@ -103,6 +103,7 @@ def extract_features_from_image(image):
 
 def classify_soil(image):
     # Resize and preprocess the image
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     image_resized = cv2.resize(image, (224, 224))
     image_array = np.expand_dims(image_resized, axis=0).astype(np.float32)
 
