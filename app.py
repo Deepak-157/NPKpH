@@ -155,7 +155,55 @@ def classify_soil(image):
     return predicted_class, confidence
 
 # API endpoint for NPK prediction from images
+def parse_gemini_response(response_text):
+    try:
+        # Extract JSON-like structure from the response
+        json_match = re.search(r'{.*}', response_text, re.DOTALL)
+        if json_match:
+            json_data = json_match.group()
+            return json.loads(json_data)
+        else:
+            raise ValueError("No JSON found in Gemini AI response")
+    except json.JSONDecodeError as e:
+        print(f"JSONDecodeError: {e}")
+        print(f"Raw Gemini Response: {response_text}")
+        return {"error": "Invalid JSON format received from Gemini AI"}
+    except Exception as e:
+        print(f"Unexpected Error: {e}")
+        print(f"Raw Gemini Response: {response_text}")
+        return {"error": str(e)}
 
+# Function to generate fertilizer recommendations
+
+
+def get_fertilizer_recommendation(n_value, p_value, k_value, ph_value, crop_type, soil_type, weather):
+    prompt = f"""
+        Given the following soil and crop information, generate a **fertilizer recommendation** in **only JSON format**:
+        
+        - Nitrogen (N) level: {n_value}% (Consider values: N<=0.02 => low, 0.02<N<=0.05 => moderate, N>0.05 => high)
+        - Phosphorus (P) level: {p_value} ppm (Consider values: P<=6 => low, 6<P<=20 => moderate, P>20 => high)
+        - Potassium (K) level: {k_value} ppm (Consider values: K<=50 => low, 50<K<=150 => moderate, K>150 => high)
+        - pH level: {ph_value}
+        - Crop Type: {crop_type} (This could be crops like wheat, rice, maize, etc.)
+        - Soil Type: {soil_type} (other common soil types can be specified)
+        - Weather Conditions: {weather} (Can vary depending on region; options could include humid, dry, or temperate)
+
+        Provide the following fertilizer details in JSON:
+        {{
+            "fertilizer_name": "Common fertilizer name based on soil and crop needs",
+            "fertilizer_quantity": "Recommended quantity in kg/hectare",
+            "application_schedule": "When to apply (e.g., pre-planting, post-planting)",
+            "application_method": "How to apply (e.g., broadcast, side dressing, fertigation)",
+            "data": "Other important details regarding fertilizer usage or soil improvement"
+        }}
+    """
+    response = chat_session.send_message(prompt)
+    if response and hasattr(response, 'text'):
+        result_text = response.text
+        print(f"Gemini AI Raw Response:\n{result_text}")
+        return parse_gemini_response(result_text)
+    else:
+        return {"error": "No valid response received from Gemini AI"}
 
 @app.route("/predict_npk", methods=["POST"])
 def predict_npk():
